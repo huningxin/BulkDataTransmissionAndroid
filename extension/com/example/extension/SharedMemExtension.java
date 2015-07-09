@@ -24,7 +24,13 @@ public class SharedMemExtension extends XWalkExtensionClient {
 
     @Override
     public void onMessage(int instanceId, String message) {
-        postMessage(instanceId, message);
+        int size = Integer.parseInt(message);
+        byte[] buffer = new byte[size + 1];
+        for (int i = 0; i < size; ++i)
+            buffer[i] = 'p';
+        buffer[size] = 0;
+        String result = new String(buffer);
+        postMessage(instanceId, result);
     }
 
     @Override

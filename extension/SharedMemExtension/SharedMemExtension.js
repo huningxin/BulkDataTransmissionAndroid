@@ -10,12 +10,7 @@ extension.setMessageListener(function(msg) {
   };
 });
 
-exports.sendBulkDataAsync = function (msg, callback) {
+exports.requestBulkDataAsync = function(power, callback) {
   bulkDataListener = callback;
-  extension.postMessage(msg);
+  extension.postMessage(power.toString());
 };
-
-exports.sendBulkDataSync = function (msg) {
-  return extension.internal.sendSyncMessage(msg);
-};
-

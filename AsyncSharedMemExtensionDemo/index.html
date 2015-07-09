@@ -9,35 +9,23 @@
 bulk_data_transmission.c (compiled to libbulk_data_transmission.so) to
 extend Crosswalk.</p>
 
-<input type='text' id='startPow' value='1' />
-<button value='Start' onclick='startCalc()'>Start</button>
-<p id='startMsg' />
 <div id="out">
-  <div id='sync' />
   <div id='async' />
 </div>
 
 <script>
-
-if (!bulkData) {
-  document.write("bulkData object do not exist.<br>");
-}
-
 var div = document.getElementById('out');
-var divSync = document.getElementById('sync');
 var divAsync = document.getElementById('async');
 
-var generateData = function(power) {
-  var data = "p"; // 1 byte
-  for (var i = 0; i < power; ++i) { // 26 is 64MB, which is the limit of post message
-    data += data;
+var readableSize = function(size) {
+  var suffixCount = 0;
+  while (size >= 1024) {
+    size = size / 1024;
+    ++suffixCount;
   }
-  return data;
-}
 
-var readableSize = function(power) {
   var suffix;
-  switch (Math.floor(power / 10)) {
+  switch(suffixCount) {
   case 0:
     suffix = 'B';
     break;
@@ -56,63 +44,47 @@ var readableSize = function(power) {
   default:
     return nil;
   }
-  return Math.pow(2, power % 10) + suffix;
+  return size + suffix;
 }
 
-var testSync = function(power) {
-  var message = document.createElement('p');
-  var size = readableSize(power);
-  message.innerText = 'Start sync transmitting '
-    + size + ' data chunk...';
-  divSync.appendChild(message);
-
-  var beginTime = new Date();
-
-  // sync call to extension
-  bulkData.sendBulkDataSync(generateData(power));
-
-  var endTime = new Date();
-
-  message.innerText += ' Done. Elapsed time: '
-  + (endTime.getTime() - beginTime.getTime() + 'ms');
+var requestDataAsync = function(size) {
+  var start = performance.now();
+  bulkData.requestBulkDataAsync(size, function(msg) {
+      var message = document.createElement('p');
+      message.innerText = 'Requested '
+        + readableSize(msg.length) + ' data chunk asynchronously';
+      divAsync.appendChild(message);
+      var length = msg.length;
+      var duration = (performance.now() - start)/1000;
+      console.log('transferred ' + readableSize(length) + ' for ' + duration + ' at '+ (length/(1024*1024))/duration + ' MB/s');
+    });
 }
 
-var testAsync = function(power) {
-  var message = document.createElement('p');
-  var size = readableSize(power);
-  message.innerText = 'Start async transmitting '
-    + size + ' data chunk...';
-  divAsync.appendChild(message);
+var startPow = 1;
+var maxPow = 26; // 26 is 64MB, which is the limit of IPC post message
+var repeatTimes = 1;
 
-  var beginTime = new Date();
+var index = startPow * repeatTimes;
 
-  // async call to extension
-  bulkData.sendBulkDataAsync(generateData(power), function (result) {
-    var endTime = new Date();
-    message.innerText += ' Done. Elapsed time: '
-    + (endTime.getTime() - beginTime.getTime() + 'ms');
-  });
-}
-
-function startCalc() {
-  var message = document.getElementById('startMsg');
-  var inputText = document.getElementById('startPow');
-  var startPow = parseInt(inputText.value);
-  message.innerText = 'Start calc from pow: ' + startPow;
-  var timeGap = 1800;
-  //var timeGap = 30000;
-  var start = -timeGap;
-  for (var i = startPow; i < 27; ++i) {
-    var asyncFunc = 'testAsync(' + i + ')';
-    //setTimeout(asyncFunc, start += timeGap);
-    //for (var j = 0; j < 10; ++j) {
-      var asyncFunc = 'testAsync(' + i + ')';
-      setTimeout(asyncFunc, start += timeGap);
-    //}
-  }
-}
+function runTestCase() {
+  return new Promise(function(resolve) {
+      var size = Math.pow(2, Math.floor(index / repeatTimes));
+      requestDataAsync(size);
+      resolve();
+    }).then(function() {
+      ++index;
+      if (index == (maxPow + 1) * repeatTimes) {
+        document.title = "Pass";
+        return;
+      }
+      runTestCase();
+    }, function(e) {
+      console.error(e);
+      document.title = "Fail";
+    });
+};
+runTestCase();
 
 </script>
-
 </body>
 </html>
