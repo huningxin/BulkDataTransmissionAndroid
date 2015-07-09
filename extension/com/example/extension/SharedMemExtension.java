@@ -5,6 +5,8 @@ import org.xwalk.app.runtime.extension.XWalkExtensionContextClient;
 
 import android.util.Log;
 
+import org.apache.commons.codec.binary.Base64;
+
 public class SharedMemExtension extends XWalkExtensionClient {
     private final static String TAG = "SharedMemExtension";
     // Don't change the parameters in Constructor because XWalk needs to call this constructor.
@@ -29,7 +31,8 @@ public class SharedMemExtension extends XWalkExtensionClient {
         for (int i = 0; i < size; ++i)
             buffer[i] = 'p';
         buffer[size] = 0;
-        String result = new String(buffer);
+        byte[] encodedBufer = Base64.encodeBase64(buffer);
+        String result = new String(encodedBufer);
         postMessage(instanceId, result);
     }
 
