@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Bulk Data Transmission demo</title>
+</head>
+<body>
+
+<p>This uses the bulk data transmission extension defined in
+bulk_data_transmission.c (compiled to libbulk_data_transmission.so) to
+extend Crosswalk.</p>
+
+<div id="out">
+  <div id='sync' />
+  <div id='async' />
+</div>
+
+<script>
+
+if (!bulkData) {
+  document.write("bulkData object do not exist.<br>");
+}
+
+var div = document.getElementById('out');
+var divSync = document.getElementById('sync');
+var divAsync = document.getElementById('async');
+
+var generateData = function(power) {
+  var data = "p"; // 1 byte
+  for (var i = 0; i < power; ++i) { // 26 is 64MB, which is the limit of post message
+    data += data;
+  }
+  return data;
+}
+
+var readableSize = function(power) {
+  var suffix;
+  switch (Math.floor(power / 10)) {
+  case 0:
+    suffix = 'B';
+    break;
+  case 1:
+    suffix = 'KB';
+    break;
+  case 2:
+    suffix = 'MB';
+    break;
+  case 3:
+    suffix = 'GB';
+    break;
+  case 4:
+    suffix = 'TB';
+    break;
+  default:
+    return nil;
+  }
+  return Math.pow(2, power % 10) + suffix;
+}
+
+var testSync = function(power) {
+  var message = document.createElement('p');
+  var size = readableSize(power);
+  message.innerText = 'Start sync transmitting '
+    + size + ' data chunk...';
+  divSync.appendChild(message);
+
+  var beginTime = new Date();
+
+  // sync call to extension
+  bulkData.sendBulkDataSync(generateData(power));
+
+  var endTime = new Date();
+
+  message.innerText += ' Done. Elapsed time: '
+  + (endTime.getTime() - beginTime.getTime() + 'ms');
+}
+
+var testAsync = function(power) {
+  var message = document.createElement('p');
+  var size = readableSize(power);
+  message.innerText = 'Start async transmitting '
+    + size + ' data chunk...';
+  divAsync.appendChild(message);
+
+  var beginTime = new Date();
+
+  // async call to extension
+  bulkData.sendBulkDataAsync(generateData(power), function (result) {
+    var endTime = new Date();
+    message.innerText += ' Done. Elapsed time: '
+    + (endTime.getTime() - beginTime.getTime() + 'ms');
+  });
+}
+
+var timeGap = 1800;
+var start = -timeGap;
+for (var i = 1; i < 27; ++i) {
+  var syncFunc = 'testSync(' + i + ')';
+  setTimeout(syncFunc, start += timeGap);
+  //for (var j = 0; j < 10; ++j) {
+  //  testSync(i);
+  //}
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "name":  "bulkData",
+  "class": "com.example.extension.SharedMemExtension",
+  "jsapi": "SharedMemExtension.js",
+  "permissions" : []
+}
