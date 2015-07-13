@@ -47,6 +47,8 @@ var readableSize = function(size) {
   return size + suffix;
 }
 
+var messaging = '0';
+
 function b64ToUint6(nChr) {
   return nChr > 64 && nChr < 91 ?
     nChr - 65 : nChr > 96 && nChr < 123 ?
@@ -56,6 +58,7 @@ function b64ToUint6(nChr) {
     63 :
     0;
 }
+
 function base64DecToArr(sBase64, arr) {
   var
     sB64Enc = sBase64.replace(/[^A-Za-z0-9\+\/]/g, ""),
@@ -76,20 +79,26 @@ function base64DecToArr(sBase64, arr) {
 }
 
 var requestDataAsync = function(size) {
-  var start = performance.now();
-  bulkData.requestBulkDataAsync(size, function(msg) {
+  var start = performance.now(); 
+  bulkData.requestBulkDataAsync(messaging + ':' + size, function(msg) {
       var message = document.createElement('p');
+      var length = 0;
+      if (msg instanceof ArrayBuffer) {
+        length = msg.byteLength;
+      } else {
+        console.log(msg.length);
+        length = base64DecToArr(msg).length;
+      }
       message.innerText = 'Requested '
-        + readableSize(msg.length) + ' data chunk asynchronously';
+        + readableSize(length) + ' data chunk asynchronously';
       divAsync.appendChild(message);
-      var length = base64DecToArr(msg).length;
       var duration = (performance.now() - start)/1000;
       console.log('transferred ' + readableSize(length) + ' for ' + duration + ' at '+ (length/(1024*1024))/duration + ' MB/s');
     });
 }
 
 var startPow = 1;
-var maxPow = 24; // 26 is 64MB, which is the limit of IPC post message
+var maxPow = 23; // 26 is 64MB, which is the limit of IPC post message
 var repeatTimes = 1;
 
 var index = startPow * repeatTimes;

@@ -24,9 +24,7 @@ public class SharedMemExtension extends XWalkExtensionClient {
         Log.e(TAG, "onStop");
     }
 
-    @Override
-    public void onMessage(int instanceId, String message) {
-        int size = Integer.parseInt(message);
+    private void handleMessage0(int instanceId, int size) {
         byte[] buffer = new byte[size + 1];
         for (int i = 0; i < size; ++i)
             buffer[i] = 'p';
@@ -34,6 +32,24 @@ public class SharedMemExtension extends XWalkExtensionClient {
         byte[] encodedBufer = Base64.encodeBase64(buffer);
         String result = new String(encodedBufer);
         postMessage(instanceId, result);
+    }
+
+    private void handleMessage1(int instanceId, int size) {
+        byte[] buffer = new byte[size + 1];
+        for (int i = 0; i < size; ++i)
+            buffer[i] = 'p';
+        postBinaryMessage(instanceId, buffer);
+    }
+
+    @Override
+    public void onMessage(int instanceId, String message) {
+        String[] parts = message.split(":");
+        int messageInterface = Integer.parseInt(parts[0]);
+        int size = Integer.parseInt(parts[1]);
+        if (messageInterface == 0)
+            handleMessage0(instanceId, size);
+        else
+            handleMessage1(instanceId, size);        
     }
 
     @Override
